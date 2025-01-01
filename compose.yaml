@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: 'postgres:latest'
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ad_tech
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  spring-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring-app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ad_tech
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+    ports:
+      - "8090:8090"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-postgres:5432/sonarqube
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ports:
+      - "9000:9000"
+    depends_on:
+      - sonar-postgres
+    networks:
+      - app-network
+
+  sonar-postgres:
+    image: 'postgres:latest'
+    container_name: sonar-postgres
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonarqube
+    volumes:
+      - sonar_postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  sonar_postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
